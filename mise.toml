@@ -1,0 +1,10 @@
+[tools]
+hk = "2"
+java = "21"
+node = "24"
+"npm:eas-cli" = "20"
+"npm:pnpm" = "11"
+maestro = "cli-2.12.0"
+
+[tasks.pre-commit]
+run = "hk run pre-commit"

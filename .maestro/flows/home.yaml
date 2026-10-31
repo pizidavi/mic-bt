@@ -1,0 +1,11 @@
+appId: ${APP_ID}
+name: Home Smoke
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-yes

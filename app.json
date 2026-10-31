@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Mic-BT",
+    "slug": "mic-bt",
+    "owner": "pizidavi",
+    "userInterfaceStyle": "automatic",
+    "orientation": "default",
+    "platforms": ["android"],
+    "android": {
+      "package": "app.pizidavi.micbt"
+    },
+    "plugins": ["expo-localization", "expo-router", "expo-status-bar", "expo-system-ui"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

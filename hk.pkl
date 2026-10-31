@@ -1,0 +1,31 @@
+amends "package://github.com/jdx/hk/releases/download/v2.10.0/hk@2.10.0#/Config.pkl"
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    steps {
+      ["format"] {
+        glob = "*.{js,jsx,ts,tsx,md,json,css}"
+        fix = "npx oxfmt {{files}}"
+      }
+      ["lint"] {
+        glob = "*.{js,jsx,ts,tsx}"
+        depends = "format"
+        check = "npx oxlint {{files}}"
+      }
+      ["typecheck"] {
+        glob = "*.{ts,tsx}"
+        check = "npx tsc --noEmit"
+      }
+      ["test"] {
+        depends = "typecheck"
+        check = "pnpm run test"
+      }
+    }
+  }
+  ["commit-msg"] {
+    steps {
+      ["commitlint"] { check = "npx commitlint --edit {{commit_msg_file}}" }
+    }
+  }
+}
