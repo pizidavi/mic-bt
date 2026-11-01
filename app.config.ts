@@ -13,6 +13,7 @@ module.exports = ({ config }: ConfigContext): Partial<ExpoConfig> => ({
   version,
   android: {
     ...config.android,
+    permissions: getPermissions(config.android?.permissions),
     package: getPackageName(config.android?.package),
   },
   ios: {
@@ -32,6 +33,10 @@ function getPackageName(packageName: string | undefined) {
   if (!packageName) return packageName;
   if (env !== 'production') return `${packageName}.${env}`;
   return packageName;
+}
+
+function getPermissions(permissions: string[] | undefined = []) {
+  return Array.from(new Set([...permissions, 'android.permission.RECORD_AUDIO']));
 }
 
 function getPlugins(plugins: (string | [] | [string] | [string, any])[] | undefined = []) {
