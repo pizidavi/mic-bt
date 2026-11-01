@@ -5,7 +5,7 @@ hooks {
     fix = true
     steps {
       ["format"] {
-        glob = "*.{js,jsx,ts,tsx,md,json,css}"
+        glob = "*.{js,jsx,ts,tsx,md,json,css,yaml,yml}"
         fix = "npx oxfmt {{files}}"
       }
       ["lint"] {
