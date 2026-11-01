@@ -20,5 +20,5 @@ export default defineConfig({
   sortPackageJson: true,
   sortTailwindcss: true,
   sortImports: true,
-  ignorePatterns: ['.expo/**', 'android/**', 'ios/**', 'uniwind.config.ts'],
+  ignorePatterns: ['.expo/**', 'android/**', 'ios/**', 'uniwind-types.d.ts'],
 });

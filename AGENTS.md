@@ -5,9 +5,10 @@ Built using React Native and Expo.
 
 ## Instructions
 
-- Always run `pnpm run typecheck` and `pnpm run lint` before finishing.
+- Always run `pnpm run typecheck` and `pnpm run lint` before finishing
 - Always write unit tests and E2E tests. See `docs/testing.md`
-- DO NOT write code comments, or for complex logic keep the minimum.
+- DO NOT write code comments, or for complex logic keep the minimum
+- DO NOT edit README.md and AGENTS.md if not asked
 
 ## Key files
 
@@ -23,6 +24,6 @@ Built using React Native and Expo.
 
 ## Docs
 
-- `docs/workflow.md` - To read when following the GitHub issue → PR workflow (gh-cli)
 - `docs/conventions.md` - To read when implementing component for structure, styling, general rules
 - `docs/testing.md` - To read when implementing unit (Vitest) and E2E (Maestro) tests
+- `docs/workflow.md` - To read when following the GitHub issue → PR workflow (gh-cli)

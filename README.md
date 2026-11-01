@@ -2,7 +2,7 @@
 
 Mic-BT is a mobile app that turns your phone into a wireless microphone: capture audio on the phone and stream it via Bluetooth to a paired device.
 
-## How it works (high level)
+## How it works
 
 1. Pair your phone with the receiving device over Bluetooth
 2. Start capturing audio from the phone's microphone in-app

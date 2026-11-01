@@ -26,7 +26,7 @@ export default defineConfig({
     'react/react-in-jsx-scope': 'off',
     'react/forbid-component-props': 'off',
   },
-  ignorePatterns: ['.expo/**', 'android/**', 'ios/**', 'uniwind.config.ts'],
+  ignorePatterns: ['.expo/**', 'android/**', 'ios/**', 'uniwind-types.d.ts'],
   options: {
     typeAware: true,
   },
