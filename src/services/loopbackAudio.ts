@@ -1,12 +1,11 @@
-import { PermissionsAndroid, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { PERMISSIONS, RESULTS, request } from 'react-native-permissions';
 
 import LoopbackAudioModule from '../../modules/loopback-audio/src/LoopbackAudioModule';
 
 const requestMicPermission = async () => {
-  const recordAudio = PermissionsAndroid.PERMISSIONS.RECORD_AUDIO;
-  if (Platform.OS !== 'android' || !recordAudio) return false;
-  const result = await PermissionsAndroid.request(recordAudio);
-  return result === PermissionsAndroid.RESULTS.GRANTED;
+  if (Platform.OS !== 'android') return false;
+  return (await request(PERMISSIONS.ANDROID.RECORD_AUDIO)) === RESULTS.GRANTED;
 };
 
 export const loopbackAudio = {
