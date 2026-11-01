@@ -1,5 +1,9 @@
 {
   "general": {
     "yes": "Yes"
+  },
+  "home": {
+    "start": "Start",
+    "stop": "Stop"
   }
 }

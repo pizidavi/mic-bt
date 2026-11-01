@@ -35,6 +35,7 @@ function getPackageName(packageName: string | undefined) {
 }
 
 function getPlugins(plugins: (string | [] | [string] | [string, any])[] | undefined = []) {
+  plugins.push('./modules/loopback-audio/app.plugin.js');
   if (NODE_ENV === 'development')
     plugins.push([
       'expo-dev-client',

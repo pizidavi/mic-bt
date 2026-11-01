@@ -1,0 +1,21 @@
+appId: ${APP_ID}
+name: Loopback Start Stop
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-start-button
+- tapOn:
+    id: home-start-button
+- extendedWaitUntil:
+    visible:
+      id: home-stop-button
+    timeout: 10000
+- tapOn:
+    id: home-stop-button
+- assertVisible:
+    id: home-start-button

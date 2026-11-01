@@ -1,5 +1,9 @@
 {
   "general": {
     "yes": "Sì"
+  },
+  "home": {
+    "start": "Avvia",
+    "stop": "Ferma"
   }
 }
