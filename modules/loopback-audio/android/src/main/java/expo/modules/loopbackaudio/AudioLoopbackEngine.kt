@@ -5,6 +5,8 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.NoiseSuppressor
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -28,6 +30,8 @@ class AudioLoopbackEngine {
   private val queue = ArrayBlockingQueue<ShortArray>(QUEUE_CAPACITY)
   private var audioRecord: AudioRecord? = null
   private var audioTrack: AudioTrack? = null
+  private var echoCanceler: AcousticEchoCanceler? = null
+  private var noiseSuppressor: NoiseSuppressor? = null
   private var captureThread: Thread? = null
   private var playbackThread: Thread? = null
 
@@ -50,6 +54,7 @@ class AudioLoopbackEngine {
     }
 
     queue.clear()
+    attachEchoEffects(record)
     running.set(true)
     audioRecord = record
     audioTrack = track
@@ -84,6 +89,7 @@ class AudioLoopbackEngine {
     try {
       track?.release()
     } catch (_: Exception) {}
+    releaseEchoEffects()
 
     audioRecord = null
     audioTrack = null
@@ -121,7 +127,7 @@ class AudioLoopbackEngine {
       AudioTrack.Builder()
         .setAudioAttributes(
           AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
             .build()
         )
@@ -139,6 +145,18 @@ class AudioLoopbackEngine {
     } catch (e: Exception) {
       null
     }?.takeIf { it.state == AudioTrack.STATE_INITIALIZED }
+  }
+
+  private fun attachEchoEffects(record: AudioRecord) {
+    echoCanceler = AcousticEchoCanceler.create(record.audioSessionId)?.also { it.setEnabled(true) }
+    noiseSuppressor = NoiseSuppressor.create(record.audioSessionId)?.also { it.setEnabled(true) }
+  }
+
+  private fun releaseEchoEffects() {
+    echoCanceler?.release()
+    echoCanceler = null
+    noiseSuppressor?.release()
+    noiseSuppressor = null
   }
 
   private fun captureLoop(record: AudioRecord) {
