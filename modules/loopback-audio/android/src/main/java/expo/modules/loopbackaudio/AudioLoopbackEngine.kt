@@ -51,6 +51,8 @@ class AudioLoopbackEngine {
 
     queue.clear()
     running.set(true)
+    audioRecord = record
+    audioTrack = track
     captureThread = Thread({ captureLoop(record) }, "LoopbackCapture").apply { start() }
     playbackThread = Thread({ playbackLoop(track) }, "LoopbackPlayback").apply { start() }
     return true
