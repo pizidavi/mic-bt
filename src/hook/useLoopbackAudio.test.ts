@@ -263,10 +263,13 @@ describe('useLoopbackAudio gain mute and level', () => {
     expect(useLoopbackAudioState().level).toBe(0);
   });
 
-  it('logs gain and mute changes', async () => {
+  it('logs gain and mute changes only when the value changes', async () => {
+    await useLoopbackAudioState().setGain(8);
     await useLoopbackAudioState().setGain(8);
     useLoopbackAudioState().toggleMute();
     await Promise.resolve();
+    expect(serviceMock.setGain).toHaveBeenCalledTimes(1);
+    expect(loggerMock.debug).toHaveBeenCalledTimes(1);
     expect(loggerMock.debug).toHaveBeenCalledWith('Loopback gain: 8 dB');
     expect(loggerMock.info).toHaveBeenCalledWith('Loopback muted: true');
   });

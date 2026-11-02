@@ -11,16 +11,20 @@ const useAudioControls = (running: boolean) => {
   const [level, setLevel] = useState(0);
 
   // Callback
-  const setGain = useCallback(async (db: number) => {
-    const clamped = clampGainDb(db);
-    setGainValue(clamped);
-    const applied = await loopbackAudio.setGain(clamped).catch(e => {
-      appLog.error('Loopback setGain failed', e);
-      return clamped;
-    });
-    appLog.debug(`Loopback gain: ${applied} dB`);
-    setGainValue(applied);
-  }, []);
+  const setGain = useCallback(
+    async (db: number) => {
+      const clamped = clampGainDb(db);
+      if (clamped === gainValue) return;
+      setGainValue(clamped);
+      const applied = await loopbackAudio.setGain(clamped).catch(e => {
+        appLog.error('Loopback setGain failed', e);
+        return clamped;
+      });
+      appLog.debug(`Loopback gain: ${applied} dB`);
+      setGainValue(applied);
+    },
+    [gainValue],
+  );
 
   const toggleMute = useCallback(() => {
     const next = !muted;
