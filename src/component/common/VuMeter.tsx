@@ -18,8 +18,10 @@ type VuMeterProps = {
 function VuMeter(props: VuMeterProps) {
   const { level, testId, className } = props;
 
+  // Memo
   const percent = Math.min(100, Math.max(0, Math.round(level)));
 
+  // Render
   return (
     <View
       testID={testId}

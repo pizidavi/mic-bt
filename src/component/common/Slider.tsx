@@ -42,6 +42,9 @@ function Slider(props: SliderProps) {
   const [width, setWidth] = useState(0);
 
   // Memo
+  const percent = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
+
+  // Memo
   const panResponder = useMemo(() => {
     const handleTouch = (x: number) => {
       if (disabled || width <= 0) return;
@@ -60,8 +63,6 @@ function Slider(props: SliderProps) {
   }, [disabled, width, value, minimumValue, maximumValue, step, onValueChange]);
 
   // Render
-  const percent = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
-
   return (
     <View
       testID={testId}
