@@ -39,6 +39,13 @@ tags:
 - assertVisible:
     id: home-gain-value
     text: '+21 dB'
+- swipeOn:
+    id: home-gain-slider
+    start: 90%, 50%
+    end: 20%, 50%
+- assertVisible:
+    id: home-gain-value
+    text: '0 dB'
 - tapOn:
     id: home-stop-button
 - extendedWaitUntil:

@@ -51,8 +51,7 @@ function Slider(props: SliderProps) {
       const ratio = Math.min(1, Math.max(0, x / width));
       const raw = minimumValue + ratio * (maximumValue - minimumValue);
       const stepped = Math.round(raw / step) * step;
-      const next = Math.min(maximumValue, Math.max(minimumValue, stepped));
-      if (next !== value) onValueChange(next);
+      onValueChange(Math.min(maximumValue, Math.max(minimumValue, stepped)));
     };
     return PanResponder.create({
       onStartShouldSetPanResponder: () => !disabled,
@@ -60,7 +59,7 @@ function Slider(props: SliderProps) {
       onPanResponderGrant: event => handleTouch(event.nativeEvent.locationX),
       onPanResponderMove: event => handleTouch(event.nativeEvent.locationX),
     });
-  }, [disabled, width, value, minimumValue, maximumValue, step, onValueChange]);
+  }, [disabled, width, minimumValue, maximumValue, step, onValueChange]);
 
   // Render
   return (
@@ -73,10 +72,15 @@ function Slider(props: SliderProps) {
       {...panResponder.panHandlers}
     >
       <View className='bg-muted h-2 w-full rounded-full'>
-        <View className='bg-primary h-full rounded-full' style={{ width: `${percent}%` }} />
+        <View
+          className='bg-primary h-full rounded-full'
+          pointerEvents='none'
+          style={{ width: `${percent}%` }}
+        />
       </View>
       <View
         className='border-primary bg-background absolute h-6 w-6 rounded-full border-2'
+        pointerEvents='none'
         style={{ left: `${percent}%`, marginLeft: -12 }}
       />
     </View>
