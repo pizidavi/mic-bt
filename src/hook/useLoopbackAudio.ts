@@ -18,11 +18,13 @@ const useAudioControls = (running: boolean) => {
       appLog.error('Loopback setGain failed', e);
       return clamped;
     });
+    appLog.debug(`Loopback gain: ${applied} dB`);
     setGainValue(applied);
   }, []);
 
   const toggleMute = useCallback(() => {
     const next = !muted;
+    appLog.info(`Loopback muted: ${next}`);
     setMuted(next);
     loopbackAudio.setMuted(next).catch(e => appLog.error('Loopback setMuted failed', e));
   }, [muted]);
@@ -47,22 +49,28 @@ export const useLoopbackAudio = () => {
   // Callback
   const start = useCallback(async () => {
     if (busy) return;
+    appLog.info('Loopback start requested');
     setBusy(true);
     const started = await loopbackAudio.start().catch(e => {
       appLog.error('Loopback start failed', e);
       return false;
     });
+    if (started) appLog.info('Loopback started');
+    else appLog.warn('Loopback start refused');
     setRunning(started);
     setBusy(false);
   }, [busy]);
 
   const stop = useCallback(async () => {
     if (busy) return;
+    appLog.info('Loopback stop requested');
     setBusy(true);
     const stopped = await loopbackAudio.stop().catch(e => {
       appLog.error('Loopback stop failed', e);
       return false;
     });
+    if (stopped) appLog.info('Loopback stopped');
+    else appLog.warn('Loopback stop refused');
     setRunning(!stopped);
     setBusy(false);
   }, [busy]);
