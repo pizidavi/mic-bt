@@ -20,7 +20,6 @@ function App() {
   // Render
   return (
     <BaseScreen as='scroll' className='gap-base' testId={testId('home-screen')}>
-      <LocaleText testId={testId('home-yes')} text='general:yes' />
       <Button
         testId={running ? testId('home-stop-button') : testId('home-start-button')}
         text={running ? 'home:stop' : 'home:start'}

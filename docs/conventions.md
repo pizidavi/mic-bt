@@ -11,7 +11,7 @@ Component structure order:
 3. State (`useState`)
 4. Reference (`useRef`)
 5. API (`useQuery`)
-6. Memo (`useMemo`)
+6. Memo (`useMemo` or constants)
 7. Callback (`useCallback`)
 8. Imperative handle
 9. Method (plain functions)
