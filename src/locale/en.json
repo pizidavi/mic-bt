@@ -4,6 +4,9 @@
   },
   "home": {
     "start": "Start",
-    "stop": "Stop"
+    "stop": "Stop",
+    "gain": "Gain",
+    "mute": "Mute",
+    "unmute": "Unmute"
   }
 }

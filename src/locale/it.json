@@ -4,6 +4,9 @@
   },
   "home": {
     "start": "Avvia",
-    "stop": "Ferma"
+    "stop": "Ferma",
+    "gain": "Guadagno",
+    "mute": "Muto",
+    "unmute": "Riattiva"
   }
 }
