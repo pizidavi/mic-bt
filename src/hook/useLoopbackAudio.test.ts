@@ -2,16 +2,32 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const harness = vi.hoisted(() => {
   const slots = new Map<number, unknown>();
-  const state = { slots, cursor: 0 };
+  const state = {
+    slots,
+    cursor: 0,
+    effect: null as (() => (() => void) | null) | null,
+    cleanup: null as (() => void) | null,
+  };
   const reset = () => {
     slots.clear();
     state.cursor = 0;
+    state.effect = null;
+    state.cleanup = null;
   };
-  return { state, reset };
+  const runEffect = () => {
+    state.cleanup?.();
+    const { effect } = state;
+    state.effect = null;
+    state.cleanup = effect?.() ?? null;
+  };
+  return { state, reset, runEffect };
 });
 
 vi.mock('react', () => ({
   useCallback: <T>(fn: T): T => fn,
+  useEffect: (effect: () => (() => void) | null) => {
+    harness.state.effect = effect;
+  },
   useState: <S>(initial: S | (() => S)): [S, (update: S | ((prev: S) => S)) => void] => {
     const { slots } = harness.state;
     const slot = harness.state.cursor;
@@ -30,6 +46,9 @@ vi.mock('react', () => ({
 const serviceMock = vi.hoisted(() => ({
   start: vi.fn<() => Promise<boolean>>(),
   stop: vi.fn<() => Promise<boolean>>(),
+  setGain: vi.fn<(db: number) => Promise<number>>(),
+  setMuted: vi.fn<(muted: boolean) => Promise<boolean>>(),
+  onLevel: vi.fn<(listener: (levelDb: number) => void) => () => void>(),
 }));
 const loggerMock = vi.hoisted(() => ({ error: vi.fn() }));
 
@@ -44,10 +63,23 @@ const useLoopbackAudioState = () => {
   return useLoopbackAudio();
 };
 
+const forwardLevelListener = () => {
+  const forwarded = vi.fn<(levelDb: number) => void>();
+  const unsubscribe = vi.fn();
+  serviceMock.onLevel.mockImplementationOnce(listener => {
+    forwarded.mockImplementation(listener);
+    return unsubscribe;
+  });
+  return { forwarded, unsubscribe };
+};
+
 describe('useLoopbackAudio', () => {
   beforeEach(() => {
     serviceMock.start.mockReset().mockResolvedValue(true);
     serviceMock.stop.mockReset().mockResolvedValue(true);
+    serviceMock.setGain.mockReset().mockImplementation(db => Promise.resolve(db));
+    serviceMock.setMuted.mockReset().mockResolvedValue(true);
+    serviceMock.onLevel.mockReset().mockReturnValue(vi.fn());
     loggerMock.error.mockReset();
     harness.reset();
   });
@@ -157,5 +189,109 @@ describe('useLoopbackAudio', () => {
     const result = useLoopbackAudioState();
     expect(result.running).toBe(true);
     expect(loggerMock.error).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useLoopbackAudio gain mute and level', () => {
+  beforeEach(() => {
+    serviceMock.start.mockReset().mockResolvedValue(true);
+    serviceMock.stop.mockReset().mockResolvedValue(true);
+    serviceMock.setGain.mockReset().mockImplementation(db => Promise.resolve(db));
+    serviceMock.setMuted.mockReset().mockResolvedValue(true);
+    serviceMock.onLevel.mockReset().mockReturnValue(vi.fn());
+    loggerMock.error.mockReset();
+    harness.reset();
+  });
+
+  it('clamps the gain to the supported range and applies it', async () => {
+    await useLoopbackAudioState().setGain(100);
+    expect(serviceMock.setGain).toHaveBeenCalledWith(24);
+    expect(useLoopbackAudioState().gain).toBe(24);
+
+    await useLoopbackAudioState().setGain(-100);
+    expect(serviceMock.setGain).toHaveBeenCalledWith(-6);
+    expect(useLoopbackAudioState().gain).toBe(-6);
+
+    await useLoopbackAudioState().setGain(8);
+    expect(serviceMock.setGain).toHaveBeenCalledWith(8);
+    expect(useLoopbackAudioState().gain).toBe(8);
+  });
+
+  it('syncs the gain with the value applied natively', async () => {
+    serviceMock.setGain.mockResolvedValue(3);
+
+    await useLoopbackAudioState().setGain(10);
+
+    expect(useLoopbackAudioState().gain).toBe(3);
+  });
+
+  it('logs and keeps the clamped gain when setGain rejects', async () => {
+    serviceMock.setGain.mockRejectedValue(new Error('boom'));
+
+    await useLoopbackAudioState().setGain(100);
+
+    expect(useLoopbackAudioState().gain).toBe(24);
+    expect(loggerMock.error).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggles mute and applies it natively', async () => {
+    useLoopbackAudioState().toggleMute();
+    await Promise.resolve();
+    expect(serviceMock.setMuted).toHaveBeenCalledWith(true);
+    expect(useLoopbackAudioState().muted).toBe(true);
+
+    useLoopbackAudioState().toggleMute();
+    await Promise.resolve();
+    expect(serviceMock.setMuted).toHaveBeenCalledWith(false);
+    expect(useLoopbackAudioState().muted).toBe(false);
+  });
+
+  it('logs and keeps the muted state when setMuted rejects', async () => {
+    serviceMock.setMuted.mockRejectedValue(new Error('boom'));
+
+    useLoopbackAudioState().toggleMute();
+    await Promise.resolve();
+
+    expect(useLoopbackAudioState().muted).toBe(true);
+    expect(loggerMock.error).toHaveBeenCalledTimes(1);
+  });
+
+  it('subscribes to level events while running and maps them to a percent', async () => {
+    const { forwarded } = forwardLevelListener();
+
+    await useLoopbackAudioState().start();
+    useLoopbackAudioState();
+    harness.runEffect();
+
+    forwarded(-30);
+    expect(useLoopbackAudioState().level).toBe(50);
+
+    forwarded(-120);
+    expect(useLoopbackAudioState().level).toBe(0);
+
+    forwarded(10);
+    expect(useLoopbackAudioState().level).toBe(100);
+  });
+
+  it('does not subscribe to level events while not running', () => {
+    harness.runEffect();
+
+    expect(serviceMock.onLevel).not.toHaveBeenCalled();
+    expect(useLoopbackAudioState().level).toBe(0);
+  });
+
+  it('unsubscribes from level events and resets the level on stop', async () => {
+    const { unsubscribe } = forwardLevelListener();
+
+    await useLoopbackAudioState().start();
+    useLoopbackAudioState();
+    harness.runEffect();
+
+    await useLoopbackAudioState().stop();
+    useLoopbackAudioState();
+    harness.runEffect();
+
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(useLoopbackAudioState().level).toBe(0);
   });
 });
