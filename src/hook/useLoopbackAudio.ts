@@ -1,37 +1,63 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { loopbackAudio } from '../services/loopbackAudio';
+import { useLoopbackStore } from '../store/store';
+import { LOOPBACK_STATE } from '../type/enum';
 import { appLog } from '../util/logger';
 
 export const useLoopbackAudio = () => {
+  // Global state
+  const state = useLoopbackStore(s => s.state);
+  const reason = useLoopbackStore(s => s.reason);
+  const setStatus = useLoopbackStore(s => s.setStatus);
+
   // State
-  const [running, setRunning] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Effect
+  useEffect(() => {
+    const subscription = loopbackAudio.onStateChanged(setStatus);
+    return () => subscription.remove();
+  }, [setStatus]);
 
   // Callback
   const start = useCallback(async () => {
-    if (busy) return;
+    if (busy) return false;
     setBusy(true);
     const started = await loopbackAudio.start().catch(e => {
       appLog.error('Loopback start failed', e);
       return false;
     });
-    setRunning(started);
+    if (started) setStatus({ state: LOOPBACK_STATE.RUNNING, reason: null });
     setBusy(false);
-  }, [busy]);
+    return started;
+  }, [busy, setStatus]);
 
   const stop = useCallback(async () => {
-    if (busy) return;
+    if (busy) return false;
     setBusy(true);
     const stopped = await loopbackAudio.stop().catch(e => {
       appLog.error('Loopback stop failed', e);
       return false;
     });
-    setRunning(!stopped);
+    if (stopped) setStatus({ state: LOOPBACK_STATE.IDLE, reason: null });
     setBusy(false);
-  }, [busy]);
+    return stopped;
+  }, [busy, setStatus]);
 
-  const toggle = useCallback(() => (running ? stop() : start()), [running, start, stop]);
+  const toggle = useCallback(
+    () => (state === LOOPBACK_STATE.RUNNING ? stop() : start()),
+    [state, start, stop],
+  );
 
-  return { running, busy, start, stop, toggle };
+  return {
+    state,
+    reason,
+    running: state === LOOPBACK_STATE.RUNNING,
+    stopped: state === LOOPBACK_STATE.STOPPED,
+    busy,
+    start,
+    stop,
+    toggle,
+  };
 };

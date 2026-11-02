@@ -1,17 +1,26 @@
 package expo.modules.loopbackaudio
 
+import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.NoiseSuppressor
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-class AudioLoopbackEngine {
+class AudioLoopbackEngine(
+  private val audioManager: AudioManager,
+  private val onStateChange: (String) -> Unit
+) {
   companion object {
     private const val SAMPLE_RATE = 16000
     private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
@@ -23,11 +32,27 @@ class AudioLoopbackEngine {
     private const val QUEUE_CAPACITY = 25
     private const val PLAYBACK_POLL_TIMEOUT_MS = 100L
     private const val THREAD_JOIN_TIMEOUT_MS = 500L
+    private const val STATE_IDLE = "idle"
+    private const val STATE_RUNNING = "running"
+    private const val STATE_STOPPED_PREFIX = "stopped:"
+    private const val REASON_FOCUS_LOSS = "focus-loss"
   }
 
   private val lock = Any()
   private val running = AtomicBoolean(false)
   private val queue = ArrayBlockingQueue<ShortArray>(QUEUE_CAPACITY)
+  private val playbackAttributes = AudioAttributes.Builder()
+    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+    .build()
+  private val mainHandler = Handler(Looper.getMainLooper())
+  private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+    when (change) {
+      AudioManager.AUDIOFOCUS_LOSS -> synchronized(lock) { stopLocked(REASON_FOCUS_LOSS) }
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {}
+    }
+  }
+  private var focusRequest: AudioFocusRequest? = null
   private var audioRecord: AudioRecord? = null
   private var audioTrack: AudioTrack? = null
   private var echoCanceler: AcousticEchoCanceler? = null
@@ -43,11 +68,17 @@ class AudioLoopbackEngine {
       record.release()
       return false
     }
+    if (!requestFocus()) {
+      record.release()
+      track.release()
+      return false
+    }
 
     try {
       track.play()
       record.startRecording()
     } catch (e: Exception) {
+      abandonFocus()
       record.release()
       track.release()
       return false
@@ -60,11 +91,16 @@ class AudioLoopbackEngine {
     audioTrack = track
     captureThread = Thread({ captureLoop(record) }, "LoopbackCapture").apply { start() }
     playbackThread = Thread({ playbackLoop(track) }, "LoopbackPlayback").apply { start() }
+    onStateChange(STATE_RUNNING)
     return true
   }
 
-  fun stop(): Boolean = synchronized(lock) {
+  fun stop(): Boolean = synchronized(lock) { stopLocked(null) }
+
+  private fun stopLocked(reason: String?): Boolean {
     if (!running.getAndSet(false)) return true
+
+    abandonFocus()
 
     val record = audioRecord
     val track = audioTrack
@@ -95,7 +131,33 @@ class AudioLoopbackEngine {
     audioTrack = null
     captureThread = null
     playbackThread = null
+
+    onStateChange(reason?.let { "$STATE_STOPPED_PREFIX$it" } ?: STATE_IDLE)
     return true
+  }
+
+  private fun requestFocus(): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+        .setAudioAttributes(playbackAttributes)
+        .setOnAudioFocusChangeListener(focusListener, mainHandler)
+        .build()
+      if (audioManager.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) return false
+      focusRequest = request
+      return true
+    }
+    @Suppress("DEPRECATION")
+    val result = audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN)
+    return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+  }
+
+  private fun abandonFocus() {
+    focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+    focusRequest = null
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+      @Suppress("DEPRECATION")
+      audioManager.abandonAudioFocus(focusListener)
+    }
   }
 
   private fun createAudioRecord(): AudioRecord? {
@@ -125,12 +187,7 @@ class AudioLoopbackEngine {
     val bufferBytes = maxOf(minBufferBytes, CHUNK_SAMPLES * DOUBLE_BUFFER_COUNT * 2)
     return try {
       AudioTrack.Builder()
-        .setAudioAttributes(
-          AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-            .build()
-        )
+        .setAudioAttributes(playbackAttributes)
         .setAudioFormat(
           AudioFormat.Builder()
             .setSampleRate(SAMPLE_RATE)
