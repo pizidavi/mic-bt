@@ -4,6 +4,11 @@
   },
   "home": {
     "start": "Start",
-    "stop": "Stop"
+    "stop": "Stop",
+    "status-idle": "Idle",
+    "status-running": "Running",
+    "status-stopped": "Stopped",
+    "restart": "Restart",
+    "reason-focus-loss": "Audio was interrupted by another app, like a phone call"
   }
 }

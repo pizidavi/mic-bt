@@ -4,6 +4,11 @@
   },
   "home": {
     "start": "Avvia",
-    "stop": "Ferma"
+    "stop": "Ferma",
+    "status-idle": "Inattivo",
+    "status-running": "In riproduzione",
+    "status-stopped": "Fermato",
+    "restart": "Riavvia",
+    "reason-focus-loss": "L'audio è stato interrotto da un'altra app, come una telefonata"
   }
 }

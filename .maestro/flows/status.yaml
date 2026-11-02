@@ -1,0 +1,35 @@
+appId: ${APP_ID}
+name: Home Status Pipeline
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-status
+- assertNotVisible:
+    id: home-stop-reason-banner
+- assertNotVisible:
+    id: home-restart-button
+- tapOn:
+    id: home-start-button
+- extendedWaitUntil:
+    visible:
+      id: home-stop-button
+    timeout: 10000
+- assertNotVisible:
+    id: home-stop-reason-banner
+- assertNotVisible:
+    id: home-restart-button
+- tapOn:
+    id: home-stop-button
+- extendedWaitUntil:
+    visible:
+      id: home-start-button
+    timeout: 10000
+- assertNotVisible:
+    id: home-stop-reason-banner
+- assertNotVisible:
+    id: home-restart-button
