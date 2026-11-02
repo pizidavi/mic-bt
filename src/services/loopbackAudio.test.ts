@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const nativeMock = vi.hoisted(() => ({
   start: vi.fn<() => Promise<boolean>>(),
   stop: vi.fn<() => Promise<boolean>>(),
+  setGain: vi.fn<(value: number) => Promise<number>>(),
+  setMuted: vi.fn<(muted: boolean) => Promise<boolean>>(),
+  addListener: vi.fn(),
 }));
 const permissionsMock = vi.hoisted(() => ({ request: vi.fn() }));
 const platformMock = vi.hoisted(() => ({ Platform: { OS: 'android' } }));
@@ -21,6 +24,9 @@ describe('loopbackAudio', () => {
   beforeEach(() => {
     nativeMock.start.mockReset().mockResolvedValue(true);
     nativeMock.stop.mockReset().mockResolvedValue(true);
+    nativeMock.setGain.mockReset().mockImplementation((value: number) => Promise.resolve(value));
+    nativeMock.setMuted.mockReset().mockResolvedValue(true);
+    nativeMock.addListener.mockReset().mockReturnValue({ remove: vi.fn() });
     permissionsMock.request.mockReset().mockResolvedValue('granted');
     platformMock.Platform.OS = 'android';
   });
@@ -48,5 +54,45 @@ describe('loopbackAudio', () => {
     nativeMock.stop.mockResolvedValue(true);
     await expect(loopbackAudio.stop()).resolves.toBe(true);
     expect(nativeMock.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('clamps the gain before applying it natively', async () => {
+    await expect(loopbackAudio.setGain(100)).resolves.toBe(24);
+    expect(nativeMock.setGain).toHaveBeenCalledWith(24);
+
+    await expect(loopbackAudio.setGain(-50)).resolves.toBe(-6);
+    expect(nativeMock.setGain).toHaveBeenCalledWith(-6);
+
+    await expect(loopbackAudio.setGain(10)).resolves.toBe(10);
+    expect(nativeMock.setGain).toHaveBeenCalledWith(10);
+  });
+
+  it('applies the mute flag natively', async () => {
+    await expect(loopbackAudio.setMuted(true)).resolves.toBe(true);
+    expect(nativeMock.setMuted).toHaveBeenCalledWith(true);
+
+    await expect(loopbackAudio.setMuted(false)).resolves.toBe(true);
+    expect(nativeMock.setMuted).toHaveBeenCalledWith(false);
+  });
+
+  it('forwards level events to the listener and unsubscribes', () => {
+    const remove = vi.fn();
+    const nativeHandler = vi.fn<(event: { levelDb: number }) => void>();
+    nativeMock.addListener.mockImplementationOnce(
+      (_event: string, handler: (event: { levelDb: number }) => void) => {
+        nativeHandler.mockImplementation(handler);
+        return { remove };
+      },
+    );
+    const listener = vi.fn();
+
+    const unsubscribe = loopbackAudio.onLevel(listener);
+    expect(nativeMock.addListener).toHaveBeenCalledWith('onLevel', expect.any(Function));
+
+    nativeHandler({ levelDb: -20 });
+    expect(listener).toHaveBeenCalledWith(-20);
+
+    unsubscribe();
+    expect(remove).toHaveBeenCalledTimes(1);
   });
 });

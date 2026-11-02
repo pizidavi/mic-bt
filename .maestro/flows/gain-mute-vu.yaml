@@ -1,0 +1,54 @@
+appId: ${APP_ID}
+name: Gain Mute Vu
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-vu-meter
+- tapOn:
+    id: home-start-button
+- extendedWaitUntil:
+    visible:
+      id: home-stop-button
+    timeout: 10000
+- tapOn:
+    id: home-mute-button
+- extendedWaitUntil:
+    visible:
+      id: home-unmute-button
+    timeout: 5000
+- tapOn:
+    id: home-unmute-button
+- extendedWaitUntil:
+    visible:
+      id: home-mute-button
+    timeout: 5000
+- tapOn:
+    id: home-gain-slider
+    point: 10%, 50%
+- assertVisible:
+    id: home-gain-value
+    text: '-3 dB'
+- tapOn:
+    id: home-gain-slider
+    point: 90%, 50%
+- assertVisible:
+    id: home-gain-value
+    text: '+21 dB'
+- swipeOn:
+    id: home-gain-slider
+    start: 90%, 50%
+    end: 20%, 50%
+- assertVisible:
+    id: home-gain-value
+    text: '0 dB'
+- tapOn:
+    id: home-stop-button
+- extendedWaitUntil:
+    visible:
+      id: home-start-button
+    timeout: 10000
