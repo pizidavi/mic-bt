@@ -18,14 +18,15 @@ import kotlin.math.pow
 class AudioLoopbackEngine {
   companion object {
     private const val SAMPLE_RATE = 16000
+    private const val PLAYBACK_SAMPLE_RATE = 16048
     private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
     private const val CHANNEL_IN = AudioFormat.CHANNEL_IN_MONO
     private const val CHANNEL_OUT = AudioFormat.CHANNEL_OUT_MONO
     private const val CHUNK_MS = 20L
     private const val CHUNK_SAMPLES = (SAMPLE_RATE * CHUNK_MS / 1000).toInt()
     private const val DOUBLE_BUFFER_COUNT = 2
-    private const val QUEUE_CAPACITY = 25
-    private const val PLAYBACK_POLL_TIMEOUT_MS = 100L
+    private const val QUEUE_CAPACITY = 4
+    private const val PLAYBACK_POLL_TIMEOUT_MS = 40L
     private const val THREAD_JOIN_TIMEOUT_MS = 500L
     private const val GAIN_MIN_DB = -6.0
     private const val GAIN_MAX_DB = 24.0
@@ -143,7 +144,7 @@ class AudioLoopbackEngine {
   }
 
   private fun createAudioTrack(): AudioTrack? {
-    val minBufferBytes = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, ENCODING)
+    val minBufferBytes = AudioTrack.getMinBufferSize(PLAYBACK_SAMPLE_RATE, CHANNEL_OUT, ENCODING)
     if (minBufferBytes <= 0) return null
     val bufferBytes = maxOf(minBufferBytes, CHUNK_SAMPLES * DOUBLE_BUFFER_COUNT * 2)
     return try {
@@ -156,7 +157,7 @@ class AudioLoopbackEngine {
         )
         .setAudioFormat(
           AudioFormat.Builder()
-            .setSampleRate(SAMPLE_RATE)
+            .setSampleRate(PLAYBACK_SAMPLE_RATE)
             .setEncoding(ENCODING)
             .setChannelMask(CHANNEL_OUT)
             .build()

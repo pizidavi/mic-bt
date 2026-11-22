@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { loopbackAudio } from '../services/loopbackAudio';
-import { DEFAULT_GAIN_DB, clampGainDb, levelDbToPercent } from '../util/audio';
+import { DEFAULT_GAIN_DB, clampGainDb, levelDbToPercent, nextLevelPercent } from '../util/audio';
 import { appLog } from '../util/logger';
 
 const useAudioControls = (running: boolean) => {
@@ -12,16 +12,12 @@ const useAudioControls = (running: boolean) => {
 
   // Callback
   const setGain = useCallback(
-    async (db: number) => {
+    (db: number) => {
       const clamped = clampGainDb(db);
       if (clamped === gainValue) return;
       setGainValue(clamped);
-      const applied = await loopbackAudio.setGain(clamped).catch(e => {
-        appLog.error('Loopback setGain failed', e);
-        return clamped;
-      });
-      appLog.debug(`Loopback gain: ${applied} dB`);
-      setGainValue(applied);
+      appLog.debug(`Loopback gain: ${clamped} dB`);
+      loopbackAudio.setGain(clamped).catch(e => appLog.error('Loopback setGain failed', e));
     },
     [gainValue],
   );
@@ -36,7 +32,9 @@ const useAudioControls = (running: boolean) => {
   // Effect
   useEffect(() => {
     if (!running) return;
-    return loopbackAudio.onLevel(levelDb => setLevel(levelDbToPercent(levelDb)));
+    return loopbackAudio.onLevel(levelDb =>
+      setLevel(prev => nextLevelPercent(prev, levelDbToPercent(levelDb))),
+    );
   }, [running]);
 
   return { gain: gainValue, muted, level: running ? level : 0, setGain, toggleMute };

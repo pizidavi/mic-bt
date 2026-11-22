@@ -4,6 +4,7 @@ export const GAIN_STEP_DB = 1;
 export const DEFAULT_GAIN_DB = 0;
 export const LEVEL_MIN_DB = -60;
 export const LEVEL_MAX_DB = 0;
+export const LEVEL_DECAY_PERCENT = 10;
 
 /**
  * Clamp a gain to the supported range in dB
@@ -28,3 +29,12 @@ export const levelDbToPercent = (levelDb: number) => {
   const clamped = Math.min(LEVEL_MAX_DB, Math.max(LEVEL_MIN_DB, levelDb));
   return Math.round(((clamped - LEVEL_MIN_DB) / (LEVEL_MAX_DB - LEVEL_MIN_DB)) * 100);
 };
+
+/**
+ * Smooth a meter level: rise immediately, fall gradually
+ * @param previous Previous percent
+ * @param current Current percent
+ * @return Next percent
+ */
+export const nextLevelPercent = (previous: number, current: number) =>
+  current >= previous ? current : Math.max(current, previous - LEVEL_DECAY_PERCENT);

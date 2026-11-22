@@ -7,6 +7,7 @@ import {
   clampGainDb,
   dbToLinear,
   levelDbToPercent,
+  nextLevelPercent,
 } from './audio';
 
 describe('audio', () => {
@@ -42,5 +43,14 @@ describe('audio', () => {
   it('rounds percentages to integers', () => {
     expect(levelDbToPercent(-30.05)).toBe(50);
     expect(levelDbToPercent(-10.1)).toBe(83);
+  });
+
+  it('rises the meter immediately but falls gradually', () => {
+    expect(nextLevelPercent(0, 80)).toBe(80);
+    expect(nextLevelPercent(80, 80)).toBe(80);
+    expect(nextLevelPercent(80, 20)).toBe(70);
+    expect(nextLevelPercent(70, 20)).toBe(60);
+    expect(nextLevelPercent(80, 79)).toBe(79);
+    expect(nextLevelPercent(10, 5)).toBe(5);
   });
 });

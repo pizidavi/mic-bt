@@ -36,4 +36,14 @@ describe('loopbackAudio native routing', () => {
     expect(engineSource).toContain('NoiseSuppressor.create');
     expect(engineSource).not.toContain('setEnabled(true)');
   });
+
+  it('shifts the playback rate slightly to break the acoustic feedback loop', () => {
+    expect(engineSource).toContain('PLAYBACK_SAMPLE_RATE = 16048');
+    expect(engineSource).toContain('setSampleRate(PLAYBACK_SAMPLE_RATE)');
+    expect(engineSource).toContain('getMinBufferSize(PLAYBACK_SAMPLE_RATE');
+  });
+
+  it('keeps the playback queue shallow to bound end-to-end latency', () => {
+    expect(engineSource).toContain('QUEUE_CAPACITY = 4');
+  });
 });
