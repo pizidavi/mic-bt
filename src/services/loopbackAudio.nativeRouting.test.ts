@@ -24,9 +24,16 @@ describe('loopbackAudio native routing', () => {
     expect(playback).not.toContain('USAGE_VOICE_COMMUNICATION');
   });
 
-  it('keeps capturing from the voice communication source for echo cancellation', () => {
+  it('captures from the plain mic source avoiding comm-mode attenuation', () => {
     const capture = builderSection('AudioRecord');
 
-    expect(capture).toContain('AudioSource.VOICE_COMMUNICATION');
+    expect(capture).toContain('AudioSource.MIC');
+    expect(capture).not.toContain('AudioSource.VOICE_COMMUNICATION');
+  });
+
+  it('disables platform voice effects that would cancel the looped-back voice', () => {
+    expect(engineSource).toContain('AcousticEchoCanceler.create');
+    expect(engineSource).toContain('NoiseSuppressor.create');
+    expect(engineSource).not.toContain('setEnabled(true)');
   });
 });

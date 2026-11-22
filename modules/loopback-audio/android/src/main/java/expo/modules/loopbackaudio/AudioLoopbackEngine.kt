@@ -67,7 +67,7 @@ class AudioLoopbackEngine {
     }
 
     queue.clear()
-    attachEchoEffects(record)
+    disableVoiceEffects(record)
     running.set(true)
     audioRecord = record
     audioTrack = track
@@ -112,7 +112,7 @@ class AudioLoopbackEngine {
     try {
       track?.release()
     } catch (_: Exception) {}
-    releaseEchoEffects()
+    releaseVoiceEffects()
 
     audioRecord = null
     audioTrack = null
@@ -127,7 +127,7 @@ class AudioLoopbackEngine {
     val bufferBytes = maxOf(minBufferBytes, CHUNK_SAMPLES * DOUBLE_BUFFER_COUNT * 2)
     return try {
       AudioRecord.Builder()
-        .setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+        .setAudioSource(MediaRecorder.AudioSource.MIC)
         .setAudioFormat(
           AudioFormat.Builder()
             .setSampleRate(SAMPLE_RATE)
@@ -170,12 +170,13 @@ class AudioLoopbackEngine {
     }?.takeIf { it.state == AudioTrack.STATE_INITIALIZED }
   }
 
-  private fun attachEchoEffects(record: AudioRecord) {
-    echoCanceler = AcousticEchoCanceler.create(record.audioSessionId)?.also { it.setEnabled(true) }
-    noiseSuppressor = NoiseSuppressor.create(record.audioSessionId)?.also { it.setEnabled(true) }
+  private fun disableVoiceEffects(record: AudioRecord) {
+    val session = record.audioSessionId
+    echoCanceler = AcousticEchoCanceler.create(session)?.also { it.setEnabled(false) }
+    noiseSuppressor = NoiseSuppressor.create(session)?.also { it.setEnabled(false) }
   }
 
-  private fun releaseEchoEffects() {
+  private fun releaseVoiceEffects() {
     echoCanceler?.release()
     echoCanceler = null
     noiseSuppressor?.release()

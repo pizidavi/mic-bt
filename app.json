@@ -3,6 +3,7 @@
     "name": "Mic-BT",
     "slug": "mic-bt",
     "owner": "pizidavi",
+    "scheme": "mic-bt",
     "userInterfaceStyle": "automatic",
     "orientation": "default",
     "platforms": ["android"],
