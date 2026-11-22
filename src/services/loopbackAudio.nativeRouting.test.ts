@@ -31,10 +31,14 @@ describe('loopbackAudio native routing', () => {
     expect(capture).not.toContain('AudioSource.VOICE_COMMUNICATION');
   });
 
-  it('disables platform voice effects that would cancel the looped-back voice', () => {
+  it('enable the echo canceler and noise suppression on', () => {
     expect(engineSource).toContain('AcousticEchoCanceler.create');
     expect(engineSource).toContain('NoiseSuppressor.create');
-    expect(engineSource).not.toContain('setEnabled(true)');
+    const aecLine =
+      engineSource.split('AcousticEchoCanceler.create').at(1)?.split('\n').at(0) ?? '';
+    const nsLine = engineSource.split('NoiseSuppressor.create').at(1)?.split('\n').at(0) ?? '';
+    expect(aecLine).toContain('setEnabled(true)');
+    expect(nsLine).toContain('setEnabled(true)');
   });
 
   it('shifts the playback rate slightly to break the acoustic feedback loop', () => {

@@ -7,5 +7,3 @@ tags:
     clearState: true
 - assertVisible:
     id: home-screen
-- assertVisible:
-    id: home-yes

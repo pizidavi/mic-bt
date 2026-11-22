@@ -7,6 +7,7 @@ import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.NoiseSuppressor
+import android.os.Process
 import android.os.SystemClock
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -68,7 +69,7 @@ class AudioLoopbackEngine {
     }
 
     queue.clear()
-    disableVoiceEffects(record)
+    configureVoiceEffects(record)
     running.set(true)
     audioRecord = record
     audioTrack = track
@@ -171,10 +172,10 @@ class AudioLoopbackEngine {
     }?.takeIf { it.state == AudioTrack.STATE_INITIALIZED }
   }
 
-  private fun disableVoiceEffects(record: AudioRecord) {
+  private fun configureVoiceEffects(record: AudioRecord) {
     val session = record.audioSessionId
-    echoCanceler = AcousticEchoCanceler.create(session)?.also { it.setEnabled(false) }
-    noiseSuppressor = NoiseSuppressor.create(session)?.also { it.setEnabled(false) }
+    echoCanceler = AcousticEchoCanceler.create(session)?.also { it.setEnabled(true) }
+    noiseSuppressor = NoiseSuppressor.create(session)?.also { it.setEnabled(true) }
   }
 
   private fun releaseVoiceEffects() {
@@ -185,6 +186,7 @@ class AudioLoopbackEngine {
   }
 
   private fun captureLoop(record: AudioRecord) {
+    Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
     val buffers = Array(DOUBLE_BUFFER_COUNT) { ShortArray(CHUNK_SAMPLES) }
     var index = 0
     while (running.get()) {
@@ -201,6 +203,7 @@ class AudioLoopbackEngine {
   }
 
   private fun playbackLoop(track: AudioTrack) {
+    Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
     while (running.get() || queue.isNotEmpty()) {
       val chunk = queue.poll(PLAYBACK_POLL_TIMEOUT_MS, TimeUnit.MILLISECONDS) ?: continue
       maybeEmitLevel(chunk)
