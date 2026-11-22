@@ -1,0 +1,26 @@
+appId: ${APP_ID}
+name: Loopback A2DP Session
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: home-screen
+- tapOn:
+    id: home-start-button
+- extendedWaitUntil:
+    visible:
+      id: home-stop-button
+    timeout: 10000
+- assertVisible:
+    id: home-vu-meter
+- assertVisible:
+    id: home-gain-value
+    text: '0 dB'
+- tapOn:
+    id: home-stop-button
+- extendedWaitUntil:
+    visible:
+      id: home-start-button
+    timeout: 10000
